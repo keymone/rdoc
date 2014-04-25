@@ -71,7 +71,7 @@ class RDoc::Mixin < RDoc::CodeObject
   #
   # As of the beginning of October, 2011, no gem includes nonexistent modules.
 
-  def module
+  def module(skip_siblings=[])
     return @module if @module
 
     # search the current context
@@ -81,10 +81,14 @@ class RDoc::Mixin < RDoc::CodeObject
     return @module if @module
     return @name if @name =~ /^::/
 
-    # search the includes before this one, in reverse order
-    searched = parent.includes.take_while { |i| i != self }.reverse
+    skip_siblings << self
+
+    # search the includes up until self but except those already searched
+    searched = parent.includes.
+      take_while { |i| i != self }.
+      reject { |i| skip_siblings.include? i }.reverse
     searched.each do |i|
-      inc = i.module
+      inc = i.module(skip_siblings)
       next if String === inc
       full_name = inc.child_name(@name)
       @module = @store.modules_hash[full_name]
